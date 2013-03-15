@@ -10,18 +10,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
-try:
-    from django.contrib.auth import get_user_model
-except ImportError:
-    from django.contrib.auth.models import User
-else:
-    User = get_user_model()
-
 from avatar.forms import PrimaryAvatarForm, DeleteAvatarForm, UploadAvatarForm
 from avatar.models import Avatar
 from avatar.settings import AVATAR_MAX_AVATARS_PER_USER, AVATAR_DEFAULT_SIZE
 from avatar.signals import avatar_updated
-from avatar.util import get_primary_avatar, get_default_avatar_url
+from avatar.util import (
+    get_primary_avatar, get_default_avatar_url, User, get_user)
 
 def _validate_next_parameter(request, next):
     parsed = urlparse.urlparse(next)
@@ -188,7 +182,10 @@ def delete(request, extra_context=None, next_override=None, *args, **kwargs):
 
 
 def avatar_gallery(request, username, template_name="avatar/gallery.html"):
-    user = get_object_or_404(User, username=username)
+    try:
+        user = get_user(username)
+    except User.DoesNotExist:
+        raise Http404
     return render_to_response(template_name, {
         "other_user": user,
         "avatars": user.avatar_set.all(),
@@ -196,7 +193,10 @@ def avatar_gallery(request, username, template_name="avatar/gallery.html"):
 
 
 def avatar(request, username, id, template_name="avatar/avatar.html"):
-    user = get_object_or_404(User, username=username)
+    try:
+        user = get_user(username)
+    except User.DoesNotExist:
+        raise Http404
     avatars = user.avatar_set.order_by("-date_uploaded")
     index = None
     avatar = None
