@@ -1,7 +1,6 @@
 Using django-avatar
 ===================
 
-
 Basics
 ------
 
